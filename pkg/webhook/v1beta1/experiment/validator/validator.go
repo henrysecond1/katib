@@ -291,6 +291,8 @@ func (g *DefaultValidator) validateTrialTemplate(instance *experimentsv1beta1.Ex
 	trialParametersNames := make(map[string]bool)
 	trialParametersRefs := make(map[string]bool)
 
+	trialMetaRegex := regexp.MustCompile(consts.TrialTemplateMetaReplaceFormatRegex)
+
 	for _, parameter := range trialTemplate.TrialParameters {
 		// Check if all trialParameters contain name and reference. Or name contains invalid character
 		if parameter.Name == "" || parameter.Reference == "" ||
@@ -310,8 +312,9 @@ func (g *DefaultValidator) validateTrialTemplate(instance *experimentsv1beta1.Ex
 		trialParametersRefs[parameter.Reference] = true
 
 		// Check if parameter reference exist in experiment parameters
+		isTrialMetadata := len(trialMetaRegex.FindAllString(parameter.Reference, -1)) != 0
 		if len(experimentParameterNames) > 0 {
-			if _, ok := experimentParameterNames[parameter.Reference]; !ok {
+			if _, ok := experimentParameterNames[parameter.Reference]; !ok && !isTrialMetadata {
 				return fmt.Errorf("parameter reference %v does not exist in spec.parameters: %v", parameter.Reference, instance.Spec.Parameters)
 			}
 		}
